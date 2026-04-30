@@ -53,6 +53,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Read version from versions.json
+        id: version
+        run: |
+          full=$(jq -r '.["8.4"].debian.version' versions.json)   # e.g. 8.4.9-1debian12
+          short=$(echo "$full" | cut -d- -f1)                      # e.g. 8.4.9
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "short=$short" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
@@ -60,7 +68,7 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/mysql
           tags: |
             type=raw,value=8.4
-            type=raw,value=8.4.9
+            type=raw,value=${{ steps.version.outputs.short }}
             type=raw,value=latest
 
       - name: Build and push
