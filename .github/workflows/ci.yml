@@ -25,8 +25,8 @@ jobs:
           docker run -d --name test-mysql \
             -e MYSQL_ROOT_PASSWORD=test \
             mysql-debian:8.4-test
-          for i in $(seq 1 30); do
-            if docker exec test-mysql mysqladmin ping -uroot -ptest --silent 2>/dev/null; then
+          for i in $(seq 1 60); do
+            if docker exec test-mysql mysql -uroot -ptest -e "SELECT 1" 2>/dev/null; then
               break
             fi
             sleep 2
