@@ -2,7 +2,7 @@ name: Update MySQL Version
 
 on:
   schedule:
-    - cron: '0 2 * * 1'  # 每周一 02:00 UTC
+    - cron: '0 2 1 * *'  # 每月1日 02:00 UTC
   workflow_dispatch:
 
 jobs:
