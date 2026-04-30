@@ -2,15 +2,13 @@ FROM debian:bookworm-slim
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
-RUN apt-get update && apt-get install -y --no-install-recommends gnupg && rm -rf /var/lib/apt/lists/*
-
 # add gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
 ENV GOSU_VERSION=1.19
 RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
-	apt-get install -y --no-install-recommends ca-certificates wget; \
+	apt-get install -y --no-install-recommends ca-certificates gnupg wget; \
 	rm -rf /var/lib/apt/lists/*; \
 	dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
 	wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
@@ -50,13 +48,20 @@ RUN set -eux; \
 #       BCA4 3417 C3B4 85DD 128E  C6D4 B7B3 B788 A8D3 785C
 # uid           [ unknown] MySQL Release Engineering <mysql-build@oss.oracle.com>
 # sub   rsa4096 2023-10-23 [E] [expires: 2027-10-23]
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends gnupg; \
+	rm -rf /var/lib/apt/lists/*; \
 	key='BCA4 3417 C3B4 85DD 128E C6D4 B7B3 B788 A8D3 785C'; \
 	export GNUPGHOME="$(mktemp -d)"; \
 	gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key"; \
 	mkdir -p /etc/apt/keyrings; \
 	gpg --batch --export "$key" > /etc/apt/keyrings/mysql.gpg; \
 	gpgconf --kill all; \
-	rm -rf "$GNUPGHOME"
+	rm -rf "$GNUPGHOME"; \
+	apt-mark auto '.*' > /dev/null; \
+	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 ENV MYSQL_MAJOR=8.4
 ENV MYSQL_VERSION=8.4.9-1debian12
@@ -75,6 +80,9 @@ RUN { \
 	&& apt-get install -y \
 		mysql-community-client="${MYSQL_VERSION}" \
 		mysql-community-server-core="${MYSQL_VERSION}" \
+# mecab-ipadic is a Japanese dictionary for full-text search; removed to reduce image size.
+# If you need Japanese full-text search with MeCab parser, install mecab-ipadic manually.
+	&& apt-get purge -y --auto-remove mecab-ipadic mecab-ipadic-utf8 \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& rm -rf /var/lib/mysql && mkdir -p /var/lib/mysql /var/run/mysqld \
 	&& chown -R mysql:mysql /var/lib/mysql /var/run/mysqld \

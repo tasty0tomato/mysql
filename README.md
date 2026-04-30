@@ -53,6 +53,7 @@ docker build -f 8.4/Dockerfile.debian 8.4/ -t mysql-debian:8.4
 
 - Only `linux/amd64` is supported. MySQL 8.4 Debian packages are only available for amd64.
 - MySQL itself is licensed under [GPLv2](LICENSE). The Dockerfiles and scripts in this repository are also distributed under GPLv2 to maintain consistency with the upstream project.
+- The MeCab Japanese dictionary (`mecab-ipadic`) is removed to reduce image size (~50 MB). If you require Japanese full-text search with the MeCab parser, install it manually at runtime: `apt-get install mecab-ipadic-utf8`.
 
 ## Relationship to Upstream
 
