@@ -1,73 +1,12 @@
 {
-  "9.7": {
-    "oracle": {
-      "architectures": [
-        "amd64",
-        "arm64v8"
-      ],
-      "repo": "https://repo.mysql.com/yum/mysql-9.7-community/docker/el/9",
-      "version": "9.7.0-1.el9",
-      "variant": "9-slim"
-    },
-    "mysql-shell": {
-      "repo": "https://repo.mysql.com/yum/mysql-tools-9.7-community/el/9",
-      "version": "9.7.0-1.el9"
-    },
-    "version": "9.7.0"
-  },
-  "innovation": {
-    "oracle": {
-      "architectures": [
-        "amd64",
-        "arm64v8"
-      ],
-      "repo": "https://repo.mysql.com/yum/mysql-innovation-community/docker/el/9",
-      "version": "9.6.0-1.el9",
-      "variant": "9-slim"
-    },
-    "mysql-shell": {
-      "repo": "https://repo.mysql.com/yum/mysql-tools-innovation-community/el/9",
-      "version": "9.6.0-1.el9"
-    },
-    "version": "9.6.0"
-  },
   "8.4": {
-    "oracle": {
-      "architectures": [
-        "amd64",
-        "arm64v8"
-      ],
-      "repo": "https://repo.mysql.com/yum/mysql-8.4-community/docker/el/9",
-      "version": "8.4.9-1.el9",
-      "variant": "9-slim"
-    },
-    "mysql-shell": {
-      "repo": "https://repo.mysql.com/yum/mysql-tools-8.4-community/el/9",
-      "version": "8.4.9-1.el9"
-    },
-    "version": "8.4.9"
-  },
-  "8.0": {
-    "version": "8.0.46",
+    "version": "8.4.9",
     "debian": {
       "architectures": [
         "amd64"
       ],
       "suite": "bookworm",
-      "version": "8.0.46-1debian12"
-    },
-    "oracle": {
-      "architectures": [
-        "amd64",
-        "arm64v8"
-      ],
-      "repo": "https://repo.mysql.com/yum/mysql-8.0-community/docker/el/9",
-      "version": "8.0.46-1.el9",
-      "variant": "9-slim"
-    },
-    "mysql-shell": {
-      "repo": "https://repo.mysql.com/yum/mysql-tools-community/el/9",
-      "version": "8.0.46-1.el9"
+      "version": "8.4.9-1debian12"
     }
   }
 }
