@@ -26,7 +26,7 @@ jobs:
       - name: Get current version from Dockerfile
         id: current
         run: |
-          version=$(grep '^ENV MYSQL_VERSION' 8.4/Dockerfile.debian | awk '{print $3}')
+          version=$(grep '^ENV MYSQL_VERSION=' 8.4/Dockerfile.debian | cut -d= -f2)
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Update files if version changed
