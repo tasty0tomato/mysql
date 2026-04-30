@@ -36,7 +36,7 @@ jobs:
         run: |
           mysql_version=$(echo "$LATEST" | cut -d- -f1)
 
-          sed -i "s/^ENV MYSQL_VERSION .*/ENV MYSQL_VERSION ${LATEST}/" 8.4/Dockerfile.debian
+          sed -i "s/^ENV MYSQL_VERSION=.*/ENV MYSQL_VERSION=${LATEST}/" 8.4/Dockerfile.debian
 
           jq --arg v "$mysql_version" --arg dv "$LATEST" \
             '.["8.4"].version = $v | .["8.4"].debian.version = $dv' \
