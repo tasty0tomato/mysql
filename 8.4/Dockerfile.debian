@@ -1,4 +1,5 @@
-FROM debian:bookworm-slim
+ARG DEBIAN_SUITE=trixie
+FROM debian:${DEBIAN_SUITE}-slim
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
@@ -64,9 +65,10 @@ RUN set -eux; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 ENV MYSQL_MAJOR=8.4
-ENV MYSQL_VERSION=8.4.9-1debian12
+ENV MYSQL_VERSION=8.4.9-1debian13
 
-RUN echo 'deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ bookworm mysql-8.4-lts' > /etc/apt/sources.list.d/mysql.list
+ARG DEBIAN_SUITE=trixie
+RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ ${DEBIAN_SUITE} mysql-8.4-lts" > /etc/apt/sources.list.d/mysql.list
 
 # the "/var/lib/mysql" stuff here is because the mysql-server postinst doesn't have an explicit way to disable the mysql_install_db codepath besides having a database already "configured" (ie, stuff in /var/lib/mysql/mysql)
 # also, we set debconf keys to make APT a little quieter

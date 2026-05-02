@@ -18,10 +18,12 @@ jobs:
       - name: Fetch latest version from APT repository
         id: latest
         run: |
+          suite=$(jq -r '.["8.4"].debian.suite' versions.json)
           version=$(curl -fsSL \
-            'http://repo.mysql.com/apt/debian/dists/bookworm/mysql-8.4-lts/binary-amd64/Packages' \
+            "http://repo.mysql.com/apt/debian/dists/${suite}/mysql-8.4-lts/binary-amd64/Packages" \
             | awk '/^Package: mysql-community-server-core/{found=1} found && /^Version:/{print $2; exit}')
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "suite=$suite" >> "$GITHUB_OUTPUT"
 
       - name: Get current version from Dockerfile
         id: current
@@ -51,6 +53,6 @@ jobs:
           body: |
             Automated version bump from `${{ steps.current.outputs.version }}` to `${{ steps.latest.outputs.version }}`.
 
-            Source: http://repo.mysql.com/apt/debian/dists/bookworm/mysql-8.4-lts/binary-amd64/Packages
+            Source: http://repo.mysql.com/apt/debian/dists/${{ steps.latest.outputs.suite }}/mysql-8.4-lts/binary-amd64/Packages
           branch: update/mysql-${{ steps.latest.outputs.version }}
           delete-branch: true

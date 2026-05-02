@@ -4,13 +4,13 @@ Unofficial Debian-based Docker images for MySQL Community Server (8.4).
 
 ## Background
 
-The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining a Debian (bookworm) variant for MySQL 8.4 LTS.
+The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining a Debian (trixie) variant for MySQL 8.4 LTS.
 
 ## Supported Tags
 
 | Tag | MySQL Version | Base OS |
 |-----|--------------|---------|
-| `8.4`, `latest` | 8.4.9 | debian:bookworm-slim |
+| `8.4`, `latest` | 8.4.9 | debian:trixie-slim |
 
 ## Usage
 

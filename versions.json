@@ -5,8 +5,8 @@
       "architectures": [
         "amd64"
       ],
-      "suite": "bookworm",
-      "version": "8.4.9-1debian12"
+      "suite": "trixie",
+      "version": "8.4.9-1debian13"
     }
   }
 }

@@ -17,8 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Read suite from versions.json
+        id: suite
+        run: echo "suite=$(jq -r '.["8.4"].debian.suite' versions.json)" >> "$GITHUB_OUTPUT"
+
       - name: Build Debian image
-        run: docker build -f 8.4/Dockerfile.debian 8.4/ -t mysql-debian:8.4-test
+        run: docker build -f 8.4/Dockerfile.debian --build-arg "DEBIAN_SUITE=${{ steps.suite.outputs.suite }}" 8.4/ -t mysql-debian:8.4-test
 
       - name: Smoke test
         run: |
@@ -56,10 +60,12 @@ jobs:
       - name: Read version from versions.json
         id: version
         run: |
-          full=$(jq -r '.["8.4"].debian.version' versions.json)   # e.g. 8.4.9-1debian12
-          short=$(echo "$full" | cut -d- -f1)                      # e.g. 8.4.9
+          full=$(jq -r '.["8.4"].debian.version' versions.json)
+          short=$(echo "$full" | cut -d- -f1)
+          suite=$(jq -r '.["8.4"].debian.suite' versions.json)
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "short=$short" >> "$GITHUB_OUTPUT"
+          echo "suite=$suite" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata
         id: meta
@@ -76,6 +82,7 @@ jobs:
         with:
           context: 8.4
           file: 8.4/Dockerfile.debian
+          build-args: DEBIAN_SUITE=${{ steps.version.outputs.suite }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
