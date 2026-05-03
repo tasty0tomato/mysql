@@ -40,7 +40,7 @@ Place `.sql`, `.sql.gz`, `.sql.xz`, `.sh` files in `/docker-entrypoint-initdb.d/
 docker run -d \
   -v ./init:/docker-entrypoint-initdb.d \
   -e MYSQL_ROOT_PASSWORD=secret \
-  ghcr.io/<your-username>/mysql:8.4
+  ghcr.io/tasty0tomato/mysql:8.4
 ```
 
 ## Building Locally
