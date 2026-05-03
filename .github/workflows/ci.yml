@@ -35,7 +35,6 @@ jobs:
             fi
             sleep 2
           done
-          docker exec test-mysql mysql -uroot -ptest -e "SELECT VERSION();"
           docker stop test-mysql
           docker rm test-mysql
 

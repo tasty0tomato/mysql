@@ -18,7 +18,7 @@ The [official docker-library/mysql](https://github.com/docker-library/mysql) ima
 docker run -d \
   --name mysql \
   -e MYSQL_ROOT_PASSWORD=my-secret-pw \
-  ghcr.io/<your-username>/mysql:8.4
+  ghcr.io/tasty0tomato/mysql:8.4
 ```
 
 ### Environment Variables
