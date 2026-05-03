@@ -30,7 +30,7 @@ jobs:
             -e MYSQL_ROOT_PASSWORD=test \
             mysql-debian:8.4-test
           for i in $(seq 1 60); do
-            if docker exec test-mysql mysql -uroot -ptest -e "SELECT 1" 2>/dev/null; then
+            if docker exec test-mysql mysql -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
               break
             fi
             sleep 2
