@@ -1,16 +1,20 @@
 # mysql-debian
 
-Unofficial Debian-based Docker images for MySQL Community Server (8.4).
+Unofficial Debian-based Docker images for MySQL Community Server LTS releases (8.4, 9.7).
 
 ## Background
 
-The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining a Debian (trixie) variant for MySQL 8.4 LTS.
+The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining Debian (trixie) variants for the current MySQL LTS lines.
 
 ## Supported Tags
 
 | Tag | MySQL Version | Base OS |
 |-----|--------------|---------|
 | `8.4`, `latest` | 8.4.9 | debian:trixie-slim |
+| `9.7` | 9.7.0 | debian:trixie-slim |
+
+- **`8.4`** is the more mature LTS line and holds the `latest` tag.
+- **`9.7`** is the newest LTS (released 2026-04-21, the first LTS after 8.4). It tracks the frontier but is **not** tagged `latest`; pull it explicitly via `:9.7`.
 
 ## Usage
 
@@ -46,12 +50,15 @@ docker run -d \
 ## Building Locally
 
 ```bash
+# 8.4
 docker build -f 8.4/Dockerfile.debian 8.4/ -t mysql-debian:8.4
+# 9.7
+docker build -f 9.7/Dockerfile.debian 9.7/ -t mysql-debian:9.7
 ```
 
 ## Notes
 
-- Only `linux/amd64` is supported. MySQL 8.4 Debian packages are only available for amd64.
+- Only `linux/amd64` is supported. MySQL Debian packages are only available for amd64.
 - MySQL itself is licensed under [GPLv2](LICENSE). The Dockerfiles and scripts in this repository are also distributed under GPLv2 to maintain consistency with the upstream project.
 - The MeCab Japanese dictionary (`mecab-ipadic`) is removed to reduce image size (~50 MB). If you require Japanese full-text search with the MeCab parser, install it manually at runtime: `apt-get install mecab-ipadic-utf8`.
 

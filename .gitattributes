@@ -1,2 +1,4 @@
 8.4/Dockerfile*             linguist-language=Dockerfile
 8.4/docker-entrypoint.sh   linguist-language=Shell
+9.7/Dockerfile*             linguist-language=Dockerfile
+9.7/docker-entrypoint.sh   linguist-language=Shell
