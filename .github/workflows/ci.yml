@@ -23,7 +23,7 @@ jobs:
 
       - name: Read suite from versions.json
         id: suite
-        run: echo "suite=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].debian.suite' versions.json)" >> "$GITHUB_OUTPUT"
+        run: echo "suite=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].suite' versions.json)" >> "$GITHUB_OUTPUT"
 
       - name: Build Debian image
         run: docker build -f ${{ matrix.mysql }}/Dockerfile.debian --build-arg "DEBIAN_SUITE=${{ steps.suite.outputs.suite }}" ${{ matrix.mysql }}/ -t mysql-debian:${{ matrix.mysql }}-test
@@ -64,15 +64,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read version from versions.json
+      - name: Read suite and latest flag from versions.json
         id: version
         run: |
-          full=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].debian.version' versions.json)
-          short=$(echo "$full" | cut -d- -f1)
-          suite=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].debian.suite' versions.json)
+          suite=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].suite' versions.json)
           is_latest=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].latest // false' versions.json)
-          echo "full=$full" >> "$GITHUB_OUTPUT"
-          echo "short=$short" >> "$GITHUB_OUTPUT"
           echo "suite=$suite" >> "$GITHUB_OUTPUT"
           echo "is_latest=$is_latest" >> "$GITHUB_OUTPUT"
 
@@ -83,7 +79,6 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/mysql
           tags: |
             type=raw,value=${{ matrix.mysql }}
-            type=raw,value=${{ steps.version.outputs.short }}
             type=raw,value=latest,enable=${{ steps.version.outputs.is_latest }}
 
       - name: Build and push

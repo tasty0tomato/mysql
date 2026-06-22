@@ -1,23 +1,9 @@
 {
   "8.4": {
-    "version": "8.4.9",
-    "latest": true,
-    "debian": {
-      "architectures": [
-        "amd64"
-      ],
-      "suite": "trixie",
-      "version": "8.4.9-1debian13"
-    }
+    "suite": "trixie",
+    "latest": true
   },
   "9.7": {
-    "version": "9.7.0",
-    "debian": {
-      "architectures": [
-        "amd64"
-      ],
-      "suite": "trixie",
-      "version": "9.7.0-1debian13"
-    }
+    "suite": "trixie"
   }
 }

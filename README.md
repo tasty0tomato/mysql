@@ -10,11 +10,16 @@ The [official docker-library/mysql](https://github.com/docker-library/mysql) ima
 
 | Tag | MySQL Version | Base OS |
 |-----|--------------|---------|
-| `8.4`, `latest` | 8.4.9 | debian:trixie-slim |
-| `9.7` | 9.7.0 | debian:trixie-slim |
+| `8.4`, `latest` | latest 8.4 LTS patch | debian:trixie-slim |
+| `9.7` | latest 9.7 LTS patch | debian:trixie-slim |
 
+- Each image installs the **latest patch** of its MySQL LTS line from the
+  corresponding APT component (`mysql-8.4-lts` / `mysql-9.7-lts`), so a rebuild
+  always picks up the newest patch and security fixes. Images are **not** pinned
+  to an exact patch version.
 - **`8.4`** is the more mature LTS line and holds the `latest` tag.
-- **`9.7`** is the newest LTS (released 2026-04-21, the first LTS after 8.4). It tracks the frontier but is **not** tagged `latest`; pull it explicitly via `:9.7`.
+- **`9.7`** is the newest LTS (released 2026-04-21, the first LTS after 8.4). It
+  tracks the frontier but is **not** tagged `latest`; pull it explicitly via `:9.7`.
 
 ## Usage
 

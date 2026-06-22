@@ -65,7 +65,6 @@ RUN set -eux; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 ENV MYSQL_MAJOR=8.4
-ENV MYSQL_VERSION=8.4.9-1debian13
 
 ARG DEBIAN_SUITE=trixie
 RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ ${DEBIAN_SUITE} mysql-8.4-lts" > /etc/apt/sources.list.d/mysql.list
@@ -80,8 +79,11 @@ RUN { \
 	} | debconf-set-selections \
 	&& apt-get update \
 	&& apt-get install -y \
-		mysql-community-client="${MYSQL_VERSION}" \
-		mysql-community-server-core="${MYSQL_VERSION}" \
+# No exact version pin: the mysql-8.4-lts component only ever serves the 8.4 LTS
+# line, so we always install its latest patch. This keeps builds from breaking
+# when a new patch ships and the previous one leaves the APT index.
+		mysql-community-client \
+		mysql-community-server-core \
 # mecab-ipadic is a Japanese dictionary for full-text search; removed to reduce image size.
 # If you need Japanese full-text search with MeCab parser, install mecab-ipadic manually.
 	&& apt-get purge -y --auto-remove mecab-ipadic mecab-ipadic-utf8 \
