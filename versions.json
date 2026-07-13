@@ -1,9 +1,0 @@
-{
-  "8.4": {
-    "suite": "trixie",
-    "latest": true
-  },
-  "9.7": {
-    "suite": "trixie"
-  }
-}

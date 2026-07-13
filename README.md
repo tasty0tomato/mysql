@@ -4,14 +4,16 @@ Unofficial Debian-based Docker images for MySQL Community Server LTS releases (8
 
 ## Background
 
-The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining Debian (trixie) variants for the current MySQL LTS lines.
+The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining Debian (trixie and bookworm) variants for the current MySQL LTS lines.
 
 ## Supported Tags
 
 | Tag | MySQL Version | Base OS |
 |-----|--------------|---------|
-| `8.4`, `latest` | latest 8.4 LTS patch | debian:trixie-slim |
-| `9.7` | latest 9.7 LTS patch | debian:trixie-slim |
+| `8.4`, `8.4-trixie`, `latest` | latest 8.4 LTS patch | debian:trixie-slim |
+| `8.4-bookworm` | latest 8.4 LTS patch | debian:bookworm-slim |
+| `9.7`, `9.7-trixie` | latest 9.7 LTS patch | debian:trixie-slim |
+| `9.7-bookworm` | latest 9.7 LTS patch | debian:bookworm-slim |
 
 - Each image installs the **latest patch** of its MySQL LTS line from the
   corresponding APT component (`mysql-8.4-lts` / `mysql-9.7-lts`), so a rebuild
@@ -20,6 +22,10 @@ The [official docker-library/mysql](https://github.com/docker-library/mysql) ima
 - **`8.4`** is the more mature LTS line and holds the `latest` tag.
 - **`9.7`** is the newest LTS (released 2026-04-21, the first LTS after 8.4). It
   tracks the frontier but is **not** tagged `latest`; pull it explicitly via `:9.7`.
+- **trixie** (Debian 13) is the default base; the unsuffixed tags point to it.
+  **bookworm** (Debian 12, oldstable) variants are provided via the `-bookworm`
+  suffix for users still on Debian 12 infrastructure — note Debian LTS security
+  support for bookworm runs until roughly mid-2028.
 
 ## Usage
 
@@ -54,11 +60,18 @@ docker run -d \
 
 ## Building Locally
 
+The base OS is selected at build time via the `DEBIAN_SUITE` build argument
+(defaults to `trixie`):
+
 ```bash
-# 8.4
+# 8.4 on trixie (default)
 docker build -f 8.4/Dockerfile.debian 8.4/ -t mysql-debian:8.4
-# 9.7
+# 8.4 on bookworm
+docker build -f 8.4/Dockerfile.debian --build-arg DEBIAN_SUITE=bookworm 8.4/ -t mysql-debian:8.4-bookworm
+# 9.7 on trixie (default)
 docker build -f 9.7/Dockerfile.debian 9.7/ -t mysql-debian:9.7
+# 9.7 on bookworm
+docker build -f 9.7/Dockerfile.debian --build-arg DEBIAN_SUITE=bookworm 9.7/ -t mysql-debian:9.7-bookworm
 ```
 
 ## Notes

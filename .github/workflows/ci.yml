@@ -17,22 +17,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mysql: ["8.4", "9.7"]
+        include:
+          - { mysql: "8.4", suite: trixie,   default: true, latest: true }
+          - { mysql: "8.4", suite: bookworm }
+          - { mysql: "9.7", suite: trixie,   default: true }
+          - { mysql: "9.7", suite: bookworm }
     steps:
       - uses: actions/checkout@v5
 
-      - name: Read suite from versions.json
-        id: suite
-        run: echo "suite=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].suite' versions.json)" >> "$GITHUB_OUTPUT"
-
       - name: Build Debian image
-        run: docker build -f ${{ matrix.mysql }}/Dockerfile.debian --build-arg "DEBIAN_SUITE=${{ steps.suite.outputs.suite }}" ${{ matrix.mysql }}/ -t mysql-debian:${{ matrix.mysql }}-test
+        run: docker build -f ${{ matrix.mysql }}/Dockerfile.debian --build-arg "DEBIAN_SUITE=${{ matrix.suite }}" ${{ matrix.mysql }}/ -t mysql-debian:${{ matrix.mysql }}-${{ matrix.suite }}-test
 
       - name: Smoke test
         run: |
           docker run -d --name test-mysql \
             -e MYSQL_ROOT_PASSWORD=test \
-            mysql-debian:${{ matrix.mysql }}-test
+            mysql-debian:${{ matrix.mysql }}-${{ matrix.suite }}-test
           for i in $(seq 1 60); do
             if docker exec test-mysql mysql -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
               break
@@ -52,7 +52,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mysql: ["8.4", "9.7"]
+        include:
+          - { mysql: "8.4", suite: trixie,   default: true, latest: true }
+          - { mysql: "8.4", suite: bookworm }
+          - { mysql: "9.7", suite: trixie,   default: true }
+          - { mysql: "9.7", suite: bookworm }
 
     steps:
       - uses: actions/checkout@v5
@@ -64,29 +68,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read suite and latest flag from versions.json
-        id: version
-        run: |
-          suite=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].suite' versions.json)
-          is_latest=$(jq -r --arg v "${{ matrix.mysql }}" '.[$v].latest // false' versions.json)
-          echo "suite=$suite" >> "$GITHUB_OUTPUT"
-          echo "is_latest=$is_latest" >> "$GITHUB_OUTPUT"
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/mysql
           tags: |
-            type=raw,value=${{ matrix.mysql }}
-            type=raw,value=latest,enable=${{ steps.version.outputs.is_latest }}
+            type=raw,value=${{ matrix.mysql }}-${{ matrix.suite }}
+            type=raw,value=${{ matrix.mysql }},enable=${{ matrix.default == true }}
+            type=raw,value=latest,enable=${{ matrix.latest == true }}
 
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.mysql }}
           file: ${{ matrix.mysql }}/Dockerfile.debian
-          build-args: DEBIAN_SUITE=${{ steps.version.outputs.suite }}
+          build-args: DEBIAN_SUITE=${{ matrix.suite }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
