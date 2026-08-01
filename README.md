@@ -30,8 +30,11 @@ The [official docker-library/mysql](https://github.com/docker-library/mysql) ima
   support for bookworm runs until roughly mid-2028.
 - **ubuntu26.04** (Ubuntu 26.04 LTS, "Resolute Raccoon") variants are provided
   for users on Ubuntu infrastructure, supported until April 2031. Ubuntu ships
-  no `-slim` variant because its base image is already minimal, so these images
-  are comparable in size to the Debian slim ones.
+  no `-slim` variant, and its base image is roughly 30 MB larger than Debian's
+  slim one — it keeps package changelogs, uses the (larger) Rust coreutils, and
+  preinstalls Canonical's Pebble service manager. Expect the Ubuntu images to be
+  about 35-40 MB bigger than their Debian counterparts; prefer the Debian tags
+  unless you specifically need an Ubuntu userland.
 
 ## Usage
 
