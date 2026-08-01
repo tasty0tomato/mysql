@@ -1,5 +1,7 @@
-ARG DEBIAN_SUITE=trixie
-FROM debian:${DEBIAN_SUITE}-slim
+# Debian-family base image. Debian ships a "-slim" variant and is addressed by
+# codename; Ubuntu has no slim variant and is addressed by version number.
+ARG BASE_IMAGE=debian:trixie-slim
+FROM ${BASE_IMAGE}
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
@@ -66,8 +68,11 @@ RUN set -eux; \
 
 ENV MYSQL_MAJOR=9.7
 
-ARG DEBIAN_SUITE=trixie
-RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ ${DEBIAN_SUITE} mysql-9.7-lts" > /etc/apt/sources.list.d/mysql.list
+# The MySQL APT repo serves debian/ and ubuntu/ under separate paths, each with
+# its own suite names (e.g. trixie/bookworm vs resolute), so both are parameters.
+ARG MYSQL_APT_DISTRO=debian
+ARG MYSQL_APT_SUITE=trixie
+RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/${MYSQL_APT_DISTRO}/ ${MYSQL_APT_SUITE} mysql-9.7-lts" > /etc/apt/sources.list.d/mysql.list
 
 # the "/var/lib/mysql" stuff here is because the mysql-server postinst doesn't have an explicit way to disable the mysql_install_db codepath besides having a database already "configured" (ie, stuff in /var/lib/mysql/mysql)
 # also, we set debconf keys to make APT a little quieter

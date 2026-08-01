@@ -1,10 +1,10 @@
 # mysql-debian
 
-Unofficial Debian-based Docker images for MySQL Community Server LTS releases (8.4, 9.7).
+Unofficial Debian- and Ubuntu-based Docker images for MySQL Community Server LTS releases (8.4, 9.7).
 
 ## Background
 
-The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining Debian (trixie and bookworm) variants for the current MySQL LTS lines.
+The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining Debian (trixie and bookworm) and Ubuntu (26.04 LTS) variants for the current MySQL LTS lines.
 
 ## Supported Tags
 
@@ -12,8 +12,10 @@ The [official docker-library/mysql](https://github.com/docker-library/mysql) ima
 |-----|--------------|---------|
 | `8.4`, `8.4-trixie`, `latest` | latest 8.4 LTS patch | debian:trixie-slim |
 | `8.4-bookworm` | latest 8.4 LTS patch | debian:bookworm-slim |
+| `8.4-ubuntu26.04` | latest 8.4 LTS patch | ubuntu:26.04 |
 | `9.7`, `9.7-trixie` | latest 9.7 LTS patch | debian:trixie-slim |
 | `9.7-bookworm` | latest 9.7 LTS patch | debian:bookworm-slim |
+| `9.7-ubuntu26.04` | latest 9.7 LTS patch | ubuntu:26.04 |
 
 - Each image installs the **latest patch** of its MySQL LTS line from the
   corresponding APT component (`mysql-8.4-lts` / `mysql-9.7-lts`), so a rebuild
@@ -26,6 +28,10 @@ The [official docker-library/mysql](https://github.com/docker-library/mysql) ima
   **bookworm** (Debian 12, oldstable) variants are provided via the `-bookworm`
   suffix for users still on Debian 12 infrastructure — note Debian LTS security
   support for bookworm runs until roughly mid-2028.
+- **ubuntu26.04** (Ubuntu 26.04 LTS, "Resolute Raccoon") variants are provided
+  for users on Ubuntu infrastructure, supported until April 2031. Ubuntu ships
+  no `-slim` variant because its base image is already minimal, so these images
+  are comparable in size to the Debian slim ones.
 
 ## Usage
 
@@ -60,23 +66,38 @@ docker run -d \
 
 ## Building Locally
 
-The base OS is selected at build time via the `DEBIAN_SUITE` build argument
-(defaults to `trixie`):
+The base OS is selected at build time via three build arguments, which default
+to Debian trixie:
+
+| Build argument | Default | Description |
+|----------------|---------|-------------|
+| `BASE_IMAGE` | `debian:trixie-slim` | The base image to build on |
+| `MYSQL_APT_DISTRO` | `debian` | MySQL APT repo path (`debian` or `ubuntu`) |
+| `MYSQL_APT_SUITE` | `trixie` | MySQL APT repo suite (distro codename) |
 
 ```bash
-# 8.4 on trixie (default)
-docker build -f 8.4/Dockerfile.debian 8.4/ -t mysql-debian:8.4
-# 8.4 on bookworm
-docker build -f 8.4/Dockerfile.debian --build-arg DEBIAN_SUITE=bookworm 8.4/ -t mysql-debian:8.4-bookworm
-# 9.7 on trixie (default)
-docker build -f 9.7/Dockerfile.debian 9.7/ -t mysql-debian:9.7
-# 9.7 on bookworm
-docker build -f 9.7/Dockerfile.debian --build-arg DEBIAN_SUITE=bookworm 9.7/ -t mysql-debian:9.7-bookworm
+# 8.4 on Debian trixie (default)
+docker build -f 8.4/Dockerfile 8.4/ -t mysql:8.4-trixie
+
+# 8.4 on Debian bookworm
+docker build -f 8.4/Dockerfile \
+  --build-arg BASE_IMAGE=debian:bookworm-slim \
+  --build-arg MYSQL_APT_SUITE=bookworm \
+  8.4/ -t mysql:8.4-bookworm
+
+# 8.4 on Ubuntu 26.04
+docker build -f 8.4/Dockerfile \
+  --build-arg BASE_IMAGE=ubuntu:26.04 \
+  --build-arg MYSQL_APT_DISTRO=ubuntu \
+  --build-arg MYSQL_APT_SUITE=resolute \
+  8.4/ -t mysql:8.4-ubuntu26.04
 ```
+
+Substitute `9.7/` for `8.4/` to build the 9.7 LTS variants.
 
 ## Notes
 
-- Only `linux/amd64` is supported. MySQL Debian packages are only available for amd64.
+- Only `linux/amd64` is supported. MySQL only publishes amd64 packages for both its Debian and Ubuntu APT repositories.
 - MySQL itself is licensed under [GPLv2](LICENSE). The Dockerfiles and scripts in this repository are also distributed under GPLv2 to maintain consistency with the upstream project.
 - The MeCab Japanese dictionary (`mecab-ipadic`) is removed to reduce image size (~50 MB). If you require Japanese full-text search with the MeCab parser, install it manually at runtime: `apt-get install mecab-ipadic-utf8`.
 

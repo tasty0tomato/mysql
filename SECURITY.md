@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-This project packages MySQL Community Server LTS releases as Debian-based
-Docker images. Only the current LTS lines receive updates (including rebuilds
-that pick up Debian base-image security patches):
+This project packages MySQL Community Server LTS releases as Debian- and
+Ubuntu-based Docker images. Only the current LTS lines receive updates
+(including rebuilds that pick up base-image security patches):
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -29,8 +29,9 @@ this packaging, for example:
 Vulnerabilities in **MySQL itself** are out of scope here and should be
 reported to Oracle through the
 [MySQL security process](https://www.oracle.com/security-alerts/). The same
-applies to vulnerabilities in the Debian base image, which belong to the
-[Debian security team](https://www.debian.org/security/).
+applies to vulnerabilities in the base image, which belong to the
+[Debian security team](https://www.debian.org/security/) or
+[Ubuntu security](https://ubuntu.com/security) respectively.
 
 ## Reporting a Vulnerability
 

@@ -16,23 +16,32 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # "tag" is the image tag suffix, "suite" is the MySQL APT repo suite.
+      # They coincide on Debian but not on Ubuntu (ubuntu26.04 vs resolute).
       matrix:
         include:
-          - { mysql: "8.4", suite: trixie,   default: true, latest: true }
-          - { mysql: "8.4", suite: bookworm }
-          - { mysql: "9.7", suite: trixie,   default: true }
-          - { mysql: "9.7", suite: bookworm }
+          - { mysql: "8.4", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true, latest: true }
+          - { mysql: "8.4", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
+          - { mysql: "8.4", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
+          - { mysql: "9.7", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true }
+          - { mysql: "9.7", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
+          - { mysql: "9.7", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
     steps:
       - uses: actions/checkout@v5
 
-      - name: Build Debian image
-        run: docker build -f ${{ matrix.mysql }}/Dockerfile.debian --build-arg "DEBIAN_SUITE=${{ matrix.suite }}" ${{ matrix.mysql }}/ -t mysql-debian:${{ matrix.mysql }}-${{ matrix.suite }}-test
+      - name: Build image
+        run: |
+          docker build -f ${{ matrix.mysql }}/Dockerfile \
+            --build-arg "BASE_IMAGE=${{ matrix.base }}" \
+            --build-arg "MYSQL_APT_DISTRO=${{ matrix.distro }}" \
+            --build-arg "MYSQL_APT_SUITE=${{ matrix.suite }}" \
+            ${{ matrix.mysql }}/ -t mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
 
       - name: Smoke test
         run: |
           docker run -d --name test-mysql \
             -e MYSQL_ROOT_PASSWORD=test \
-            mysql-debian:${{ matrix.mysql }}-${{ matrix.suite }}-test
+            mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
           for i in $(seq 1 60); do
             if docker exec test-mysql mysql -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
               break
@@ -53,10 +62,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { mysql: "8.4", suite: trixie,   default: true, latest: true }
-          - { mysql: "8.4", suite: bookworm }
-          - { mysql: "9.7", suite: trixie,   default: true }
-          - { mysql: "9.7", suite: bookworm }
+          - { mysql: "8.4", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true, latest: true }
+          - { mysql: "8.4", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
+          - { mysql: "8.4", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
+          - { mysql: "9.7", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true }
+          - { mysql: "9.7", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
+          - { mysql: "9.7", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
 
     steps:
       - uses: actions/checkout@v5
@@ -74,7 +85,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/mysql
           tags: |
-            type=raw,value=${{ matrix.mysql }}-${{ matrix.suite }}
+            type=raw,value=${{ matrix.mysql }}-${{ matrix.tag }}
             type=raw,value=${{ matrix.mysql }},enable=${{ matrix.default == true }}
             type=raw,value=latest,enable=${{ matrix.latest == true }}
 
@@ -82,8 +93,11 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.mysql }}
-          file: ${{ matrix.mysql }}/Dockerfile.debian
-          build-args: DEBIAN_SUITE=${{ matrix.suite }}
+          file: ${{ matrix.mysql }}/Dockerfile
+          build-args: |
+            BASE_IMAGE=${{ matrix.base }}
+            MYSQL_APT_DISTRO=${{ matrix.distro }}
+            MYSQL_APT_SUITE=${{ matrix.suite }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
