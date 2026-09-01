@@ -42,8 +42,12 @@ jobs:
           docker run -d --name test-mysql \
             -e MYSQL_ROOT_PASSWORD=test \
             mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
+          # Probe over TCP rather than the unix socket. While it initializes, the
+          # entrypoint runs a temporary server started with --skip-networking, so
+          # a socket probe reports ready against that server and the connection is
+          # then pulled away when it is shut down. Only the real server has TCP.
           for i in $(seq 1 60); do
-            if docker exec test-mysql mysql -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
+            if docker exec test-mysql mysql -h 127.0.0.1 -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
               ready=yes
               break
             fi
@@ -58,7 +62,7 @@ jobs:
           fi
           # The entrypoint loads the time zone tables from /usr/share/zoneinfo.
           # An empty table means the image is missing tzdata.
-          tz="$(docker exec test-mysql mysql -uroot -ptest -N -e 'SELECT COUNT(*) FROM mysql.time_zone_name')"
+          tz="$(docker exec test-mysql mysql -h 127.0.0.1 -uroot -ptest -N -e 'SELECT COUNT(*) FROM mysql.time_zone_name')"
           echo "time zone names loaded: $tz"
           [ "$tz" -gt 0 ]
           docker stop test-mysql
