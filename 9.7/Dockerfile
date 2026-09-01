@@ -30,17 +30,21 @@ RUN set -eux; \
 
 RUN mkdir /docker-entrypoint-initdb.d
 
+# The full "perl" package is deliberately not installed. No MySQL package
+# depends on it, and the perl scripts that ship with the server (mysqldumpslow,
+# mysqld_multi) only use File::Path, Getopt::Long and POSIX, all of which are
+# provided by perl-base. That package is Essential on both Debian and Ubuntu,
+# so it is always present. Installing perl would cost ~49 MB.
 RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		bzip2 \
 		openssl \
-# FATAL ERROR: please install the following Perl modules before executing /usr/local/mysql/scripts/mysql_install_db:
-# File::Basename
-# File::Copy
-# Sys::Hostname
-# Data::Dumper
-		perl \
+# tzdata must be installed explicitly. The entrypoint feeds /usr/share/zoneinfo
+# to mysql_tzinfo_to_sql, which aborts initialization outright when the
+# directory is empty. Debian's slim images happen to ship tzdata; Ubuntu's base
+# image does not, so relying on the base to provide it breaks the Ubuntu builds.
+		tzdata \
 		xz-utils \
 		zstd \
 	; \

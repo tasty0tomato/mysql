@@ -44,10 +44,23 @@ jobs:
             mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
           for i in $(seq 1 60); do
             if docker exec test-mysql mysql -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
+              ready=yes
               break
             fi
             sleep 2
           done
+          # Without this check the loop simply falls through when the server
+          # never starts, and the step passes on a completely broken image.
+          if [ "$ready" != yes ]; then
+            echo "Server never became ready. Container log:"
+            docker logs test-mysql
+            exit 1
+          fi
+          # The entrypoint loads the time zone tables from /usr/share/zoneinfo.
+          # An empty table means the image is missing tzdata.
+          tz="$(docker exec test-mysql mysql -uroot -ptest -N -e 'SELECT COUNT(*) FROM mysql.time_zone_name')"
+          echo "time zone names loaded: $tz"
+          [ "$tz" -gt 0 ]
           docker stop test-mysql
           docker rm test-mysql
 

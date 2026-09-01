@@ -103,6 +103,7 @@ Substitute `9.7/` for `8.4/` to build the 9.7 LTS variants.
 - Only `linux/amd64` is supported. MySQL only publishes amd64 packages for both its Debian and Ubuntu APT repositories.
 - MySQL itself is licensed under [GPLv2](LICENSE). The Dockerfiles and scripts in this repository are also distributed under GPLv2 to maintain consistency with the upstream project.
 - The MeCab Japanese dictionary (`mecab-ipadic`) is removed to reduce image size (~50 MB). If you require Japanese full-text search with the MeCab parser, install it manually at runtime: `apt-get install mecab-ipadic-utf8`.
+- The full `perl` package is not installed (~49 MB saved). MySQL's own perl scripts, `mysqldumpslow` and `mysqld_multi`, work as usual because they only need modules from `perl-base`, which is Essential on both Debian and Ubuntu. If your own init scripts require additional Perl modules, install `perl` at runtime: `apt-get install perl`.
 
 ## Relationship to Upstream
 
