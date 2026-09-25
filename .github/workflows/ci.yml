@@ -38,35 +38,25 @@ jobs:
             ${{ matrix.mysql }}/ -t mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
 
       - name: Smoke test
-        run: |
-          docker run -d --name test-mysql \
-            -e MYSQL_ROOT_PASSWORD=test \
-            mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
-          # Probe over TCP rather than the unix socket. While it initializes, the
-          # entrypoint runs a temporary server started with --skip-networking, so
-          # a socket probe reports ready against that server and the connection is
-          # then pulled away when it is shut down. Only the real server has TCP.
-          for i in $(seq 1 60); do
-            if docker exec test-mysql mysql -h 127.0.0.1 -uroot -ptest -e "SELECT VERSION()" 2>/dev/null; then
-              ready=yes
-              break
-            fi
-            sleep 2
-          done
-          # Without this check the loop simply falls through when the server
-          # never starts, and the step passes on a completely broken image.
-          if [ "$ready" != yes ]; then
-            echo "Server never became ready. Container log:"
-            docker logs test-mysql
-            exit 1
-          fi
-          # The entrypoint loads the time zone tables from /usr/share/zoneinfo.
-          # An empty table means the image is missing tzdata.
-          tz="$(docker exec test-mysql mysql -h 127.0.0.1 -uroot -ptest -N -e 'SELECT COUNT(*) FROM mysql.time_zone_name')"
-          echo "time zone names loaded: $tz"
-          [ "$tz" -gt 0 ]
-          docker stop test-mysql
-          docker rm test-mysql
+        run: bash .github/scripts/smoke-test.sh mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
+
+  # Oracle Linux variant: the only one available for arm64, because MySQL's APT
+  # repositories publish amd64 packages only. Each architecture is built and
+  # smoke-tested natively on its own runner rather than under emulation.
+  build-oracle:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build -f 8.4/Dockerfile.oracle 8.4/ -t mysql-test:8.4-oraclelinux9
+
+      - name: Smoke test
+        run: bash .github/scripts/smoke-test.sh mysql-test:8.4-oraclelinux9
 
   push:
     needs: build
@@ -115,6 +105,46 @@ jobs:
             BASE_IMAGE=${{ matrix.base }}
             MYSQL_APT_DISTRO=${{ matrix.distro }}
             MYSQL_APT_SUITE=${{ matrix.suite }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  push-oracle:
+    needs: build-oracle
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      # QEMU only has to run microdnf for the arm64 half; nothing is compiled.
+      # Correctness on arm64 is covered by the native build-oracle job above.
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/mysql
+          tags: |
+            type=raw,value=8.4-oraclelinux9
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: "8.4"
+          file: 8.4/Dockerfile.oracle
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
