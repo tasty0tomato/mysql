@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Only the workflow actions. The Dockerfiles are left out: their base images
+  # are floating tags (debian:trixie-slim, oraclelinux:9-slim) or come from
+  # build arguments, and moving between OS releases is a deliberate decision.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    # One PR per month for all actions instead of one per action
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
