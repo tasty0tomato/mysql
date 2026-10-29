@@ -1,12 +1,12 @@
 # mysql
 
-Unofficial Debian-based Docker images for MySQL Community Server LTS releases (8.4, 9.7), plus a slimmed-down Oracle Linux variant of 8.4 for arm64 users.
+Unofficial Debian-based Docker images for MySQL Community Server LTS releases (8.4, 9.7), plus slimmed-down Oracle Linux variants of both LTS lines for arm64 users.
 
 ## Background
 
 The [official docker-library/mysql](https://github.com/docker-library/mysql) images dropped Debian support starting from MySQL 8.4, providing only OracleLinux-based images. This project fills that gap by maintaining Debian (trixie) variants for the current MySQL LTS lines.
 
-MySQL only publishes amd64 packages to its Debian APT repository, so those variants cannot offer arm64. For arm64 users, this project also maintains an Oracle Linux variant of 8.4 that leaves out the ~580 MB mysql-shell bundled into the official image.
+MySQL only publishes amd64 packages to its Debian APT repository, so those variants cannot offer arm64. For arm64 users, this project also maintains Oracle Linux variants of 8.4 and 9.7 that leave out the ~580 MB mysql-shell bundled into the official image.
 
 ## Supported Tags
 
@@ -15,22 +15,23 @@ MySQL only publishes amd64 packages to its Debian APT repository, so those varia
 | `8.4`, `8.4-trixie`, `latest` | latest 8.4 LTS patch | debian:trixie-slim | amd64 |
 | `8.4-oraclelinux9` | latest 8.4 LTS patch | oraclelinux:9-slim | **amd64, arm64** |
 | `9.7`, `9.7-trixie` | latest 9.7 LTS patch | debian:trixie-slim | amd64 |
+| `9.7-oraclelinux9` | latest 9.7 LTS patch | oraclelinux:9-slim | **amd64, arm64** |
 
 - Each image installs the **latest patch** of its MySQL LTS line from the
   corresponding MySQL repository (the `mysql-8.4-lts` / `mysql-9.7-lts` APT
-  components, or the 8.4 yum repository for Oracle Linux), so a rebuild always
-  picks up the newest patch and security fixes. Images are **not** pinned to an
-  exact patch version.
+  components, or the 8.4 / 9.7 yum repositories for Oracle Linux), so a rebuild
+  always picks up the newest patch and security fixes. Images are **not** pinned
+  to an exact patch version.
 - **`8.4`** is the more mature LTS line and holds the `latest` tag.
 - **`9.7`** is the newest LTS (released 2026-04-21, the first LTS after 8.4). It
   tracks the frontier but is **not** tagged `latest`; pull it explicitly via `:9.7`.
 - **trixie** (Debian 13, the current stable release) is the only Debian base;
   the unsuffixed tags point to it.
 - **oraclelinux9** is the variant to use on **arm64** (e.g. Apple Silicon, AWS
-  Graviton). It is built the same way as the official `mysql:8.4` image, but
-  without mysql-shell, which the entrypoint never uses. If you need `mysqlsh`,
-  install it at runtime from MySQL's `mysql-tools-8.4-community` yum repository,
-  or use the official image. Its package manager is `microdnf`, not `apt-get`.
+  Graviton). It is built the same way as the official `mysql:8.4` / `mysql:9.7`
+  images, but without mysql-shell, which the entrypoint never uses. If you need
+  `mysqlsh`, install it at runtime from MySQL's `mysql-tools-8.4-community` /
+  `mysql-tools-9.7-community` yum repository, or use the official image. Its package manager is `microdnf`, not `apt-get`.
 
 ## Usage
 
@@ -71,16 +72,17 @@ docker build -f 8.4/Dockerfile 8.4/ -t mysql:8.4-trixie
 
 Substitute `9.7/` for `8.4/` to build the 9.7 LTS variants.
 
-The Oracle Linux variant has its own Dockerfile and no build arguments. It builds
-natively on either amd64 or arm64:
+The Oracle Linux variants have their own Dockerfiles and no build arguments. They
+build natively on either amd64 or arm64:
 
 ```bash
 docker build -f 8.4/Dockerfile.oracle 8.4/ -t mysql:8.4-oraclelinux9
+docker build -f 9.7/Dockerfile.oracle 9.7/ -t mysql:9.7-oraclelinux9
 ```
 
 ## Notes
 
-- The Debian images support `linux/amd64` only, because MySQL only publishes amd64 packages to its Debian APT repository. The `8.4-oraclelinux9` image supports both `linux/amd64` and `linux/arm64`.
+- The Debian images support `linux/amd64` only, because MySQL only publishes amd64 packages to its Debian APT repository. The `-oraclelinux9` images support both `linux/amd64` and `linux/arm64`.
 - MySQL itself is licensed under [GPLv2](LICENSE). The Dockerfiles and scripts in this repository are also distributed under GPLv2 to maintain consistency with the upstream project.
 - The two notes below apply to the Debian images.
 - The MeCab Japanese dictionary (`mecab-ipadic`) is removed to reduce image size (~50 MB). If you require Japanese full-text search with the MeCab parser, install it manually at runtime: `apt-get install mecab-ipadic-utf8`.

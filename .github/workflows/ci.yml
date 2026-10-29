@@ -40,6 +40,8 @@ jobs:
           - { mysql: "9.7", variant: trixie,       file: Dockerfile,        arch: amd64 }
           - { mysql: "8.4", variant: oraclelinux9, file: Dockerfile.oracle, arch: amd64 }
           - { mysql: "8.4", variant: oraclelinux9, file: Dockerfile.oracle, arch: arm64 }
+          - { mysql: "9.7", variant: oraclelinux9, file: Dockerfile.oracle, arch: amd64 }
+          - { mysql: "9.7", variant: oraclelinux9, file: Dockerfile.oracle, arch: arm64 }
     steps:
       - uses: actions/checkout@v7
 
@@ -117,6 +119,7 @@ jobs:
           - { mysql: "8.4", variant: trixie,       archs: 1, latest: true }
           - { mysql: "9.7", variant: trixie,       archs: 1 }
           - { mysql: "8.4", variant: oraclelinux9, archs: 2 }
+          - { mysql: "9.7", variant: oraclelinux9, archs: 2 }
     steps:
       - name: Download digests
         uses: actions/download-artifact@v8
