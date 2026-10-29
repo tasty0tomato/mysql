@@ -7,7 +7,7 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
-# Read-only by default. The push jobs declare their own block to add
+# Read-only by default. The jobs that push declare their own block to add
 # packages: write; a job-level block replaces this one entirely.
 permissions:
   contents: read
@@ -16,98 +16,125 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/mysql
+  PUBLISH: ${{ github.ref == 'refs/heads/master' && github.event_name != 'pull_request' }}
+
 jobs:
+  # One job per image and architecture, each on a native runner. The image is
+  # smoke-tested first; the push step then rebuilds it from the builder's cache,
+  # so what gets published is exactly what was tested. Images are pushed by
+  # digest only, and the merge job below gives them their tags.
   build:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { mysql: "8.4", latest: true }
-          - { mysql: "9.7" }
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Build image
-        run: docker build -f ${{ matrix.mysql }}/Dockerfile ${{ matrix.mysql }}/ -t mysql-test:${{ matrix.mysql }}-trixie
-
-      - name: Smoke test
-        run: bash .github/scripts/smoke-test.sh mysql-test:${{ matrix.mysql }}-trixie
-
-  # Oracle Linux variant: the only one available for arm64, because MySQL's APT
-  # repositories publish amd64 packages only. Each architecture is built and
-  # smoke-tested natively on its own runner rather than under emulation.
-  build-oracle:
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [ubuntu-latest, ubuntu-24.04-arm]
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Build image
-        run: docker build -f 8.4/Dockerfile.oracle 8.4/ -t mysql-test:8.4-oraclelinux9
-
-      - name: Smoke test
-        run: bash .github/scripts/smoke-test.sh mysql-test:8.4-oraclelinux9
-
-  push:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
+      # Oracle Linux is the only variant with arm64, because MySQL's APT
+      # repository publishes amd64 packages only.
       matrix:
         include:
-          - { mysql: "8.4", latest: true }
-          - { mysql: "9.7" }
-
+          - { mysql: "8.4", variant: trixie,       file: Dockerfile,        arch: amd64 }
+          - { mysql: "9.7", variant: trixie,       file: Dockerfile,        arch: amd64 }
+          - { mysql: "8.4", variant: oraclelinux9, file: Dockerfile.oracle, arch: amd64 }
+          - { mysql: "8.4", variant: oraclelinux9, file: Dockerfile.oracle, arch: arm64 }
     steps:
       - uses: actions/checkout@v7
 
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.mysql }}
+          file: ${{ matrix.mysql }}/${{ matrix.file }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          tags: mysql-test:${{ matrix.mysql }}-${{ matrix.variant }}
+
+      - name: Smoke test
+        run: bash .github/scripts/smoke-test.sh mysql-test:${{ matrix.mysql }}-${{ matrix.variant }}
+
       - name: Log in to GHCR
+        if: env.PUBLISH == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/mysql
-          tags: |
-            type=raw,value=${{ matrix.mysql }}-trixie
-            type=raw,value=${{ matrix.mysql }}
-            type=raw,value=latest,enable=${{ matrix.latest == true }}
-
-      - name: Build and push
+      - name: Push image by digest
+        id: push
+        if: env.PUBLISH == 'true'
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.mysql }}
-          file: ${{ matrix.mysql }}/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          file: ${{ matrix.mysql }}/${{ matrix.file }}
           labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
 
-  push-oracle:
-    needs: build-oracle
+      - name: Export digest
+        if: env.PUBLISH == 'true'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        if: env.PUBLISH == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.mysql }}-${{ matrix.variant }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  # Tags each image once all of its architectures have been pushed. It runs
+  # even when other build entries failed, so a broken variant only holds back
+  # its own tags; a missing architecture fails the entry instead of publishing
+  # an incomplete image.
+  merge:
+    needs: build
+    if: ${{ !cancelled() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mysql: "8.4", variant: trixie,       archs: 1, latest: true }
+          - { mysql: "9.7", variant: trixie,       archs: 1 }
+          - { mysql: "8.4", variant: oraclelinux9, archs: 2 }
     steps:
-      - uses: actions/checkout@v7
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ matrix.mysql }}-${{ matrix.variant }}-*
+          merge-multiple: true
 
-      # QEMU only has to run microdnf for the arm64 half; nothing is compiled.
-      # Correctness on arm64 is covered by the native build-oracle job above.
-      - uses: docker/setup-qemu-action@v4
+      - name: Check every architecture was pushed
+        env:
+          ARCHS: ${{ matrix.archs }}
+        run: |
+          count="$(find "$RUNNER_TEMP/digests" -type f 2>/dev/null | wc -l)"
+          if [ "$count" -ne "$ARCHS" ]; then
+            echo "expected $ARCHS digest(s), found $count"
+            exit 1
+          fi
+
       - uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
@@ -121,16 +148,19 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository_owner }}/mysql
+          images: ${{ env.IMAGE }}
           tags: |
-            type=raw,value=8.4-oraclelinux9
+            type=raw,value=${{ matrix.mysql }}-${{ matrix.variant }}
+            type=raw,value=${{ matrix.mysql }},enable=${{ matrix.variant == 'trixie' }}
+            type=raw,value=latest,enable=${{ matrix.latest == true }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v7
-        with:
-          context: "8.4"
-          file: 8.4/Dockerfile.oracle
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - name: Create and push tags
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          TAG: ${{ matrix.mysql }}-${{ matrix.variant }}
+        run: |
+          readarray -t tags < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          sources=()
+          for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${tags[@]/#/--tag=}" "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE:$TAG"
