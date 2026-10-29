@@ -3,7 +3,7 @@
 ## Supported Versions
 
 This project packages MySQL Community Server LTS releases as Debian- and
-Ubuntu-based Docker images. Only the current LTS lines receive updates
+Oracle Linux-based Docker images. Only the current LTS lines receive updates
 (including rebuilds that pick up base-image security patches):
 
 | Version | Supported          |
@@ -31,7 +31,7 @@ reported to Oracle through the
 [MySQL security process](https://www.oracle.com/security-alerts/). The same
 applies to vulnerabilities in the base image, which belong to the
 [Debian security team](https://www.debian.org/security/) or
-[Ubuntu security](https://ubuntu.com/security) respectively.
+[Oracle Linux security](https://linux.oracle.com/security/) respectively.
 
 ## Reporting a Vulnerability
 

@@ -1,7 +1,4 @@
-# Debian-family base image. Debian ships a "-slim" variant and is addressed by
-# codename; Ubuntu has no slim variant and is addressed by version number.
-ARG BASE_IMAGE=debian:trixie-slim
-FROM ${BASE_IMAGE}
+FROM debian:trixie-slim
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
@@ -33,8 +30,8 @@ RUN mkdir /docker-entrypoint-initdb.d
 # The full "perl" package is deliberately not installed. No MySQL package
 # depends on it, and the perl scripts that ship with the server (mysqldumpslow,
 # mysqld_multi) only use File::Path, Getopt::Long and POSIX, all of which are
-# provided by perl-base. That package is Essential on both Debian and Ubuntu,
-# so it is always present. Installing perl would cost ~49 MB.
+# provided by perl-base. That package is Essential on Debian, so it is always
+# present. Installing perl would cost ~49 MB.
 RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
@@ -42,8 +39,8 @@ RUN set -eux; \
 		openssl \
 # tzdata must be installed explicitly. The entrypoint feeds /usr/share/zoneinfo
 # to mysql_tzinfo_to_sql, which aborts initialization outright when the
-# directory is empty. Debian's slim images happen to ship tzdata; Ubuntu's base
-# image does not, so relying on the base to provide it breaks the Ubuntu builds.
+# directory is empty. Debian's slim image happens to ship tzdata today, but it
+# is listed so the image does not silently break if the base stops including it.
 		tzdata \
 		xz-utils \
 		zstd \
@@ -72,11 +69,7 @@ RUN set -eux; \
 
 ENV MYSQL_MAJOR=9.7
 
-# The MySQL APT repo serves debian/ and ubuntu/ under separate paths, each with
-# its own suite names (e.g. trixie/bookworm vs resolute), so both are parameters.
-ARG MYSQL_APT_DISTRO=debian
-ARG MYSQL_APT_SUITE=trixie
-RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/${MYSQL_APT_DISTRO}/ ${MYSQL_APT_SUITE} mysql-9.7-lts" > /etc/apt/sources.list.d/mysql.list
+RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ trixie mysql-9.7-lts" > /etc/apt/sources.list.d/mysql.list
 
 # the "/var/lib/mysql" stuff here is because the mysql-server postinst doesn't have an explicit way to disable the mysql_install_db codepath besides having a database already "configured" (ie, stuff in /var/lib/mysql/mysql)
 # also, we set debconf keys to make APT a little quieter

@@ -21,29 +21,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # "tag" is the image tag suffix, "suite" is the MySQL APT repo suite.
-      # They coincide on Debian but not on Ubuntu (ubuntu26.04 vs resolute).
       matrix:
         include:
-          - { mysql: "8.4", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true, latest: true }
-          - { mysql: "8.4", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
-          - { mysql: "8.4", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
-          - { mysql: "9.7", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true }
-          - { mysql: "9.7", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
-          - { mysql: "9.7", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
+          - { mysql: "8.4", latest: true }
+          - { mysql: "9.7" }
     steps:
       - uses: actions/checkout@v7
 
       - name: Build image
-        run: |
-          docker build -f ${{ matrix.mysql }}/Dockerfile \
-            --build-arg "BASE_IMAGE=${{ matrix.base }}" \
-            --build-arg "MYSQL_APT_DISTRO=${{ matrix.distro }}" \
-            --build-arg "MYSQL_APT_SUITE=${{ matrix.suite }}" \
-            ${{ matrix.mysql }}/ -t mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
+        run: docker build -f ${{ matrix.mysql }}/Dockerfile ${{ matrix.mysql }}/ -t mysql-test:${{ matrix.mysql }}-trixie
 
       - name: Smoke test
-        run: bash .github/scripts/smoke-test.sh mysql-test:${{ matrix.mysql }}-${{ matrix.tag }}
+        run: bash .github/scripts/smoke-test.sh mysql-test:${{ matrix.mysql }}-trixie
 
   # Oracle Linux variant: the only one available for arm64, because MySQL's APT
   # repositories publish amd64 packages only. Each architecture is built and
@@ -74,12 +63,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { mysql: "8.4", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true, latest: true }
-          - { mysql: "8.4", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
-          - { mysql: "8.4", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
-          - { mysql: "9.7", tag: trixie,      base: "debian:trixie-slim",   distro: debian, suite: trixie,   default: true }
-          - { mysql: "9.7", tag: bookworm,    base: "debian:bookworm-slim", distro: debian, suite: bookworm }
-          - { mysql: "9.7", tag: ubuntu26.04, base: "ubuntu:26.04",         distro: ubuntu, suite: resolute }
+          - { mysql: "8.4", latest: true }
+          - { mysql: "9.7" }
 
     steps:
       - uses: actions/checkout@v7
@@ -97,8 +82,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/mysql
           tags: |
-            type=raw,value=${{ matrix.mysql }}-${{ matrix.tag }}
-            type=raw,value=${{ matrix.mysql }},enable=${{ matrix.default == true }}
+            type=raw,value=${{ matrix.mysql }}-trixie
+            type=raw,value=${{ matrix.mysql }}
             type=raw,value=latest,enable=${{ matrix.latest == true }}
 
       - name: Build and push
@@ -106,10 +91,6 @@ jobs:
         with:
           context: ${{ matrix.mysql }}
           file: ${{ matrix.mysql }}/Dockerfile
-          build-args: |
-            BASE_IMAGE=${{ matrix.base }}
-            MYSQL_APT_DISTRO=${{ matrix.distro }}
-            MYSQL_APT_SUITE=${{ matrix.suite }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
