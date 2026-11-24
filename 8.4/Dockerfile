@@ -1,5 +1,6 @@
 FROM debian:trixie-slim
 
+# add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
 # add gosu for easy step-down from root
@@ -37,11 +38,6 @@ RUN set -eux; \
 	apt-get install -y --no-install-recommends \
 		bzip2 \
 		openssl \
-# tzdata must be installed explicitly. The entrypoint feeds /usr/share/zoneinfo
-# to mysql_tzinfo_to_sql, which aborts initialization outright when the
-# directory is empty. Debian's slim image happens to ship tzdata today, but it
-# is listed so the image does not silently break if the base stops including it.
-		tzdata \
 		xz-utils \
 		zstd \
 	; \
