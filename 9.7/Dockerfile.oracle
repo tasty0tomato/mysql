@@ -13,7 +13,7 @@ RUN set -eux; \
 
 # add gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
-ENV GOSU_VERSION=1.19
+ENV GOSU_VERSION 1.19
 RUN set -eux; \
 # TODO find a better userspace architecture detection method than querying the kernel
 	arch="$(uname -m)"; \
@@ -39,28 +39,24 @@ RUN set -eux; \
 		openssl \
 		xz \
 		zstd \
-# The entrypoint needs findutils (find) and tzdata (/usr/share/zoneinfo, which
-# mysql_tzinfo_to_sql aborts initialization without). oraclelinux:9-slim happens
-# to ship both today, but they are listed explicitly so the image does not
-# silently break if the base image stops including them.
+# Oracle Linux 8+ is very slim :)
 		findutils \
-		tzdata \
 	; \
 	microdnf clean all
 
 RUN set -eux; \
 # https://dev.mysql.com/doc/refman/9.7/en/checking-gpg-signature.html
-# pub   rsa4096 2023-10-23 [SC] [expires: 2027-10-23]
+# pub   rsa4096 2023-10-23 [SC] [expires: 2025-10-22]
 #       BCA4 3417 C3B4 85DD 128E  C6D4 B7B3 B788 A8D3 785C
 # uid           [ unknown] MySQL Release Engineering <mysql-build@oss.oracle.com>
-# sub   rsa4096 2023-10-23 [E] [expires: 2027-10-23]
+# sub   rsa4096 2023-10-23 [E] [expires: 2025-10-22]
 	key='BCA4 3417 C3B4 85DD 128E C6D4 B7B3 B788 A8D3 785C'; \
 	export GNUPGHOME="$(mktemp -d)"; \
 	gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key"; \
 	gpg --batch --export --armor "$key" > /etc/pki/rpm-gpg/RPM-GPG-KEY-mysql; \
 	rm -rf "$GNUPGHOME"
 
-ENV MYSQL_MAJOR=9.7
+ENV MYSQL_MAJOR 9.7
 
 RUN set -eu; \
 	{ \
@@ -104,8 +100,6 @@ RUN set -eux; \
 
 VOLUME /var/lib/mysql
 
-# Same server defaults as the Debian-based images (skip-name-resolve, no host cache)
-COPY config/conf.d/docker.cnf /etc/mysql/conf.d/
 COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
 

@@ -1,10 +1,11 @@
 FROM debian:trixie-slim
 
+# add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
 # add gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
-ENV GOSU_VERSION=1.19
+ENV GOSU_VERSION 1.19
 RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
@@ -37,11 +38,6 @@ RUN set -eux; \
 	apt-get install -y --no-install-recommends \
 		bzip2 \
 		openssl \
-# tzdata must be installed explicitly. The entrypoint feeds /usr/share/zoneinfo
-# to mysql_tzinfo_to_sql, which aborts initialization outright when the
-# directory is empty. Debian's slim image happens to ship tzdata today, but it
-# is listed so the image does not silently break if the base stops including it.
-		tzdata \
 		xz-utils \
 		zstd \
 	; \
@@ -67,7 +63,7 @@ RUN set -eux; \
 	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
-ENV MYSQL_MAJOR=9.7
+ENV MYSQL_MAJOR 9.7
 
 RUN echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ trixie mysql-9.7-lts" > /etc/apt/sources.list.d/mysql.list
 
